@@ -1,0 +1,140 @@
+<!--
+ * @Description: 
+ * @Version: 2.0
+ * @Author: Yaowen Liu
+ * @Date: 2021-05-23 20:00:16
+ * @LastEditors: Yaowen Liu
+ * @LastEditTime: 2021-06-09 13:50:51
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="./css/reset.css">
+  <link rel="stylesheet" href="./css/cropper.css">
+  <link rel="stylesheet" href="./css/minime.css">
+</head>
+
+<body>
+  <div id="colorMatrix" class="colorMatrix"></div>
+  <button id="btnLightAdd">+</button>
+  <button id="btnLightReduce">-</button>
+
+  <input type="file" id="file">
+  <button id="getButton">获取文件</button>
+
+  <img src="" alt="" id="newImg" />
+  <button class="rotate" _val="0">下</button>
+  <button class="rotate" _val="90">左</button>
+  <button class="rotate" _val="180">上</button>
+  <button class="rotate" _val="270">右</button>
+
+  <button onclick="openDialog()">openDialog</button>
+
+  <script async src="https://sdk.amazonaws.com/js/aws-sdk-2.666.0.min.js"></script>
+  <script src="./js/jquery.js"></script>
+  <script src="./js/jquery.extend.js"></script>
+  <script src="./js/fabric.min.old.js"></script>
+  <script src="./js/customiseControls.js"></script>
+  <script src="./js/cropper.min.js"></script>
+  <script src="./js/localforage.min.js"></script>
+  <script src="./js/requestDecorator.js"></script>
+  <script src="./js/minime.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/colorMatrix.js"></script>
+
+  <script>
+
+    // localforage
+    var driverOrder = [
+      localforage.INDEXEDDB,
+      localforage.WEBSQL,
+      localforage.LOCALSTORAGE,
+    ];
+    localforage.setDriver(driverOrder);
+
+    // ==================================================================================
+
+    function Single() {
+
+    }
+
+    function openDialog() {
+      // 插件打开
+      $.ajax('https://tsback.witemedia.com/api/v1/configure', {
+        success: (res) => {
+          if (res.status === '0') {
+            const item = res.data.find((item) => item.id === 12);
+            if (item) {
+              const config = JSON.parse(item.configure);
+              config.increment.relatedProduct = [{
+                id: 2,
+                title: 'Would You Like To Add A Same Design Doll Keychain?',
+                price: 9.99,
+                virtualId: 39797718581419,
+                thumbnail: 'https://cdn.shopifycdn.net/s/files/1/0510/1423/8379/files/dollkeychain.png?v=1620469152',
+                sideCount: 1
+              }];
+
+              config.skin = 'yellow';
+              config.productId = 14;
+              config.productPrice = 20;
+              config.productTitle = 'My Face Pillow, Custom Pillow, Personalized Photo Pillow Gift Pillow Toy, Hula Dress, Throw Pillow, MiniMe Pillow';
+              config.miniMeData.splice(0, 1);
+
+              const a = MinimePillow.getInstance(config, function (res) {
+                console.log(res)
+              })
+              a.init();
+
+            }
+          }
+        }
+      });
+    }
+
+    $(function () {
+
+      let file = null;
+
+      // 图片翻转
+      $('#file').on('change', function (e) {
+        const $file = $(e.currentTarget);
+        file = $file[0].files[0];
+      })
+
+      $(".rotate").on('click', function (e) {
+        const angle = $(e.currentTarget).attr('_val');
+        blobToDataURL(file).then(url => {
+          rotateImage(url, angle).then(src => {
+            $("#newImg").attr('src', src);
+          })
+        })
+      })
+
+
+
+      const colorMatrix = new ColorMatrix({
+        el: '#colorMatrix',
+        pictureBase64: 'data:image/png;base64,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',
+      });
+
+      $("#btnLightReduce").click(function () {
+        colorMatrix.lightUpdate(-10);
+      })
+
+      $("#btnLightAdd").click(function () {
+        colorMatrix.lightUpdate(10);
+      })
+
+    })
+
+  </script>
+</body>
+
+</html>

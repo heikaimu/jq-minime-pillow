@@ -1,0 +1,137 @@
+<!--
+ * @Description: 
+ * @Version: 2.0
+ * @Author: Yaowen Liu
+ * @Date: 2021-06-09 12:01:25
+ * @LastEditors: Yaowen Liu
+ * @LastEditTime: 2021-06-09 13:04:58
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .image-box {
+      display: flex;
+    }
+
+    .image-box img {
+      height: 500px;
+    }
+  </style>
+</head>
+
+<body>
+  <input type="file" id="file">
+  <div class="image-box">
+    <img src="" alt="" srcset="" id="old">
+    <img src="" alt="" srcset="" id="new">
+  </div>
+
+  <script src="./js/jquery.js"></script>
+  <script>
+
+    $('#file').on('change', function (e) {
+      const $file = $(e.currentTarget);
+      file = $file[0].files[0];
+      compressImage(file, 0.7, -3690);
+    })
+
+
+    function compressImage(file, optionVal, angle) {
+
+      // 角度处理成360度以内
+      angle = angle % 360;
+      if (angle < 0) {
+        angle = angle + 360;
+      }
+
+      // 获取当前方位
+      let position = undefined;
+      if (Math.abs(angle % 360) === 0) {
+        position = 'bottom';
+      } else if (Math.abs(angle % 270) === 0) {
+        position = 'right';
+      } else if (Math.abs(angle % 180) === 0) {
+        position = 'top';
+      } else if (Math.abs(angle % 90) === 0) {
+        position = 'left';
+      }
+
+      // 读取图片
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        let url = reader.result;
+        $("#old").attr('src', url);
+        const ext = url.split(';')[0].replace('data:image/', '');
+        if (ext === 'jpg' || ext === 'jpeg') {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 绘制图片，或旋转
+            let width = img.width;
+            let height = img.height;
+            let left = 0;
+            let top = 0;
+
+            switch (position) {
+              case 'bottom':
+                width = img.width;
+                height = img.height;
+                left = 0;
+                top = 0;
+                break;
+
+              case 'left':
+                width = img.height;
+                height = img.width;
+                left = width;
+                top = 0;
+                break;
+
+              case 'top':
+                width = img.width;
+                height = img.height;
+                left = width;
+                top = height;
+                break;
+
+              case 'right':
+                width = img.height;
+                height = img.width;
+                left = 0;
+                top = height;
+                break;
+
+              default:
+                break;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.translate(left, top);
+
+            ctx.rotate(Math.PI / 180 * angle);
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+
+            url = canvas.toDataURL('image/' + ext, optionVal);
+            $("#new").attr('src', url);
+          }
+          img.src = url;
+        } else {
+          $("#new").attr('src', url);
+        }
+      }
+    }
+
+  </script>
+</body>
+
+</html>
